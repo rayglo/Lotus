@@ -41,6 +41,7 @@ class Player:
             return False
         self.hand = np.delete(self.hand, index)
         self.hand = np.append(self.hand, None)
+
         return True
 
     def get_card_by_index(self, index: int):

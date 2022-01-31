@@ -1,5 +1,7 @@
 import ConstantsGame
 from GameSimulation import GameSimulation
+from pyswip import Prolog
+import os.path
 
 
 class LotusEngine:
@@ -11,13 +13,18 @@ class LotusEngine:
             self.game_simulation = GameSimulation(f"GS_logging_{owner}.log")
             self.game_simulation.add_player(owner)
         self.owner = owner
+        if not os.path.isfile("knowledge_base_core.txt"):
+            print("knowledge_base_core.txt not present")
+        self.prolog = Prolog()
+        self.prolog.consult("knowledge_base_core.txt")
 
     def add_player(self, name: str) -> bool:
         if self.game_simulation.add_player(name):
-            print(f"player {name} registered in lotus engine")
+            self.prolog.asserta(f"player({name.lower()})")
+            print(f"player {name.lower()} registered in lotus engine")
             return True
         else:
-            print(f"player {name} is already present in lotus engine")
+            print(f"player {name.lower()} is already present in lotus engine")
 
     def set_current_player(self, current_player: str) -> bool:
         return self.game_simulation.set_current_player(current_player)
@@ -27,3 +34,7 @@ class LotusEngine:
 
     def discard_card(self, name: str, index: int):
         return self.game_simulation.discard_card(name, index)
+
+    def query(self, query: str):
+        for i in list(self.prolog.query(query)):
+            print(i)

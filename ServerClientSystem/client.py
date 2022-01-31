@@ -30,6 +30,8 @@ status = statuses[0]
 
 firstSet = False
 
+lotus_engine = LotusEngine(playerName)
+
 hintState = ("", "")
 
 
@@ -83,6 +85,9 @@ def manageInput():
             except:
                 print("Maybe you wanted to type 'hint <type> <destinatary> <value>'?")
                 continue
+        elif command.split(" ")[0] == "query" and status == statuses[1]:
+            print(f"executing query {command.split(' ')[1]}")
+            lotus_engine.query(command.split(' ')[1])
         elif command == "":
             print("[" + playerName + " - " + status + "]: ", end="")
         else:
@@ -98,7 +103,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     data = s.recv(DATASIZE)
     data = GameData.GameData.deserialize(data)
     if type(data) is GameData.ServerPlayerConnectionOk:
-        lotus_engine = LotusEngine(playerName)
         print("Connection accepted by the server. Welcome " + playerName)
     print("[" + playerName + " - " + status + "]: ", end="")
     Thread(target=manageInput).start()
@@ -154,7 +158,24 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print(data.message)
         if type(data) is GameData.ServerActionValid:  # Called everytime someone discards a card
             dataOk = True
+            print(f"card to discard: ({data.card.color}, {data.card.value})")
             lotus_engine.discard_card(data.lastPlayer, data.cardHandIndex)
+
+            data
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s2:
+                s2.connect((HOST, PORT))
+                s2.send(GameData.ClientGetGameStateRequest(playerName).serialize())
+                data_inner = s2.recv(DATASIZE)
+                data_inner = GameData.GameData.deserialize(data_inner)
+                player = None
+                for p in data_inner.players:
+                    if p.name == data.lastPlayer:
+                        player = p
+                        break
+                card = player.hand[4]
+                lotus_engine.draw_card(data.lastPlayer, card.color, card.value, 4)
+                stdout.flush()
+
             print("Action valid!")
             print("Current player: " + data.player)
         if type(data) is GameData.ServerPlayerMoveOk:  # Called everytime someone plays a card and the move is fine

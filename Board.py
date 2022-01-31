@@ -11,7 +11,7 @@ class Board:
         self.fireworks = np.array([{'color': i, 'value': 0} for i in ConstantsGame.colors])
         self.deck = np.copy(ConstantsGame.standard_deck)
         self.deck_count = len(self.deck)
-        self.discard_pile = np.array([])
+        self.discard_pile = np.array([None])
         self.blue_token = ConstantsGame.starting_blue_token
         self.red_token = 0
         self.score = 0
@@ -54,10 +54,13 @@ class Board:
         self.fireworks = np.array([{'color': i, 'value': 0} for i in ConstantsGame.colors])
         self.deck = np.copy(ConstantsGame.standard_deck)
         self.deck_count = len(self.deck)
-        self.discard_pile = np.array([])
+        self.discard_pile = np.array([None])
         self.blue_token = ConstantsGame.starting_blue_token
         self.red_token = 0
         self.score = 0
 
     def add_to_discard_pile(self, card: Card):
+        if self.discard_pile[0] is None:
+            self.discard_pile[0] = card
+            return
         self.discard_pile = np.insert(self.discard_pile, 0, [card], axis=0)
