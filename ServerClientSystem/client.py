@@ -87,7 +87,8 @@ def manageInput():
                 continue
         elif command.split(" ")[0] == "query" and status == statuses[1]:
             print(f"executing query {command.split(' ')[1]}")
-            lotus_engine.query(command.split(' ')[1])
+            print(lotus_engine.query(command.split(' ')[1]))
+            continue
         elif command == "":
             print("[" + playerName + " - " + status + "]: ", end="")
         else:

@@ -1,6 +1,6 @@
 import ConstantsGame
 from GameSimulation import GameSimulation
-from pyswip import Prolog
+from swiplserver import PrologMQI, PrologThread
 import os.path
 
 
@@ -15,12 +15,21 @@ class LotusEngine:
         self.owner = owner
         if not os.path.isfile("knowledge_base_core.txt"):
             print("knowledge_base_core.txt not present")
-        self.prolog = Prolog()
-        self.prolog.consult("knowledge_base_core.txt")
+        self.prolog = PrologMQI()
+        self.prolog.start()
+        '''
+        with self.prolog.create_thread() as prolog_thread, open("knowledge_base_core.txt", "r") as kb:
+            for line in kb:
+                if not line:
+                    continue
+                print(line)
+                prolog_thread.query(line)
+       '''
 
     def add_player(self, name: str) -> bool:
         if self.game_simulation.add_player(name):
-            self.prolog.asserta(f"player({name.lower()})")
+            with self.prolog.create_thread() as prolog_thread:
+                prolog_thread.query(f"assert(player({name})).")
             print(f"player {name.lower()} registered in lotus engine")
             return True
         else:
@@ -36,5 +45,7 @@ class LotusEngine:
         return self.game_simulation.discard_card(name, index)
 
     def query(self, query: str):
-        for i in list(self.prolog.query(query)):
-            print(i)
+        with self.prolog.create_thread() as prolog_thread:
+            result = prolog_thread.query(query)
+
+        return result
