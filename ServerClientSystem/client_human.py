@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
-import time
+
 from sys import argv, stdout
 from threading import Thread
 import GameData
 import socket
 from constants import *
 import os
-import sys
 
-sys.path.append(os.path.abspath("../"))
-from LotusEngine import LotusEngine
 
 if len(argv) < 4:
     print("You need the player name to start the game.")
-    # exit(-1)
-    playerName = "Test"  # For debug
+    #exit(-1)
+    playerName = "Test" # For debug
     ip = HOST
     port = PORT
 else:
@@ -28,10 +25,7 @@ statuses = ["Lobby", "Game", "GameHint"]
 
 status = statuses[0]
 
-firstSet = False
-
 hintState = ("", "")
-
 
 def manageInput():
     global run
@@ -90,7 +84,6 @@ def manageInput():
             continue
         stdout.flush()
 
-
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     request = GameData.ClientPlayerAddData(playerName)
     s.connect((HOST, PORT))
@@ -98,7 +91,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     data = s.recv(DATASIZE)
     data = GameData.GameData.deserialize(data)
     if type(data) is GameData.ServerPlayerConnectionOk:
-        lotus_engine = LotusEngine(playerName)
         print("Connection accepted by the server. Welcome " + playerName)
     print("[" + playerName + " - " + status + "]: ", end="")
     Thread(target=manageInput).start()
@@ -108,29 +100,18 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         if not data:
             continue
         data = GameData.GameData.deserialize(data)
-        print("\n================= " + type(data).__name__ + " received =================")
         if type(data) is GameData.ServerPlayerStartRequestAccepted:
             dataOk = True
-            print("Ready: " + str(data.acceptedStartRequests) + "/" + str(data.connectedPlayers) + " players")
+            print("Ready: " + str(data.acceptedStartRequests) + "/"  + str(data.connectedPlayers) + " players")
             data = s.recv(DATASIZE)
             data = GameData.GameData.deserialize(data)
-        if type(data) is GameData.ServerStartGameData:  # Received when the game starts
+        if type(data) is GameData.ServerStartGameData:
             dataOk = True
             print("Game start!")
             s.send(GameData.ClientPlayerReadyData(playerName).serialize())
             status = statuses[1]
-            time.sleep(1)
-            s.send(GameData.ClientGetGameStateRequest(playerName).serialize())
-        if type(data) is GameData.ServerGameStateData:  # Received everytime a "show" command is invoked
+        if type(data) is GameData.ServerGameStateData:
             dataOk = True
-            if not firstSet:  # If this is the first time i'm requesting data
-                for p in data.players:
-                    if p.name == playerName:
-                        continue
-                    lotus_engine.add_player(p.name)
-                    for i in range(len(p.hand)):
-                        lotus_engine.draw_card(p.name, p.hand[i].color, p.hand[i].value, i)
-                firstSet = True
             print("Current player: " + data.currentPlayer)
             print("Player hands: ")
             for p in data.players:
@@ -144,44 +125,42 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 print("]")
             print("Discard pile: ")
             for c in data.discardPile:
-                print("\t" + c.toClientString())
+                print("\t" + c.toClientString())            
             print("Note tokens used: " + str(data.usedNoteTokens) + "/8")
             print("Storm tokens used: " + str(data.usedStormTokens) + "/3")
-            lotus_engine.set_current_player(data.currentPlayer)
-        if type(data) is GameData.ServerActionInvalid:  # Called everytime an action is not allowed
+        if type(data) is GameData.ServerActionInvalid:
             dataOk = True
             print("Invalid action performed. Reason:")
             print(data.message)
-        if type(data) is GameData.ServerActionValid:  # Called everytime someone discards a card
+        if type(data) is GameData.ServerActionValid:
             dataOk = True
-            lotus_engine.discard_card(data.lastPlayer, data.cardHandIndex)
             print("Action valid!")
             print("Current player: " + data.player)
-        if type(data) is GameData.ServerPlayerMoveOk:  # Called everytime someone plays a card and the move is fine
+        if type(data) is GameData.ServerPlayerMoveOk:
             dataOk = True
             print("Nice move!")
             print("Current player: " + data.player)
-        if type(data) is GameData.ServerPlayerThunderStrike:  # Called everytime someone plays a wrong card
+        if type(data) is GameData.ServerPlayerThunderStrike:
             dataOk = True
             print("OH NO! The Gods are unhappy with you!")
-        if type(data) is GameData.ServerHintData:  # Called every time a player gives/gets an hint
+        if type(data) is GameData.ServerHintData:
             dataOk = True
             print("Hint type: " + data.type)
             print("Player " + data.destination + " cards with value " + str(data.value) + " are:")
             for i in data.positions:
                 print("\t" + str(i))
-        if type(data) is GameData.ServerInvalidDataReceived:  # Called everytime a data package sent is badly formed
+        if type(data) is GameData.ServerInvalidDataReceived:
             dataOk = True
             print(data.data)
-        if type(data) is GameData.ServerGameOver:  # Received whenever 3 red tokens are reached
+        if type(data) is GameData.ServerGameOver:
             dataOk = True
             print(data.message)
             print(data.score)
             print(data.scoreMessage)
             stdout.flush()
-            # run = False
+            #run = False
             print("Ready for a new game!")
         if not dataOk:
-            print("Unknown or unimplemented data type: " + str(type(data)))
+            print("Unknown or unimplemented data type: " +  str(type(data)))
         print("[" + playerName + " - " + status + "]: ", end="")
         stdout.flush()

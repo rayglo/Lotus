@@ -10,4 +10,4 @@ def value_allowed(value: int) -> bool:
 
 
 def index_allowed(index: int) -> bool:
-    return index < ConstantsGame.cards_per_hand
+    return index < ConstantsGame.cards_per_hand or index == ConstantsGame.index_not_known
